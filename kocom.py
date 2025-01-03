@@ -178,12 +178,12 @@ class RS485Wrapper:
             time.sleep(1)
         while time.time() - self.last_read_time < read_write_gap:
             time.sleep(max([0, read_write_gap - time.time() + self.last_read_time]))
-            if self.type == 'serial':
-                return self.conn.write(data)
-            elif self.type == 'socket':
-                return self.conn.send(data)
-            else:
-                return False
+        if self.type == 'serial':
+            return self.conn.write(data)
+        elif self.type == 'socket':
+            return self.conn.send(data)
+        else:
+            return False
 
     def close(self):
         ret = False

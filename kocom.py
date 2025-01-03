@@ -214,7 +214,8 @@ def send(dest, src, cmd, value, log=None, check_ack=True):
         payload = type_h_dic['send'] + seq_h + '00' + dest + src + cmd + value
         send_data = header_h + payload + chksum(payload) + trailer_h
         try:
-            rs485.reconnect()
+            rs485.close()
+            rs485.connect()
             if rs485.write(bytearray.fromhex(send_data)) == False:
                 raise Exception('Not ready')
         except Exception as ex:

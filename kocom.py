@@ -177,14 +177,13 @@ class RS485Wrapper:
         if self.last_read_time == 0:
             time.sleep(1)
         while time.time() - self.last_read_time < read_write_gap:
-            #logging.debug('pending write : time too short after last read')
             time.sleep(max([0, read_write_gap - time.time() + self.last_read_time]))
-        if self.type == 'serial':
-            return self.conn.write(data)
-        elif self.type == 'socket':
-            return self.conn.send(data)
-        else:
-            return False
+            if self.type == 'serial':
+                return self.conn.write(data)
+            elif self.type == 'socket':
+                return self.conn.send(data)
+            else:
+                return False
 
     def close(self):
         ret = False
@@ -214,9 +213,7 @@ def send(dest, src, cmd, value, log=None, check_ack=True):
         payload = type_h_dic['send'] + seq_h + '00' + dest + src + cmd + value
         send_data = header_h + payload + chksum(payload) + trailer_h
         try:
-            rs485.close()
-            rs485.connect()
-            if rs485.write(bytearray.fromhex(send_data)) == False:
+            if not rs485.write(bytearray.fromhex(send_data)):
                 raise Exception('Not ready')
         except Exception as ex:
             logging.error("[RS485] Write error.[{}]".format(ex) )
@@ -316,7 +313,7 @@ def fan_parse(value):
 def ac_parse(value):
     mode_dic = {'00': 'cool', '01': 'fan_only', '02': 'dry', '03': 'auto'}
     spd_dic = {'01': 'LOW', '02': 'MEDIUM', '03': 'HIGH'}
-    
+
     state = mode_dic.get(value[2:4]) if value[:2] == '10' else 'off'
     fan = spd_dic.get(value[4:6])
     temperature = int(value[8:10], 16)
@@ -452,7 +449,7 @@ def mqtt_on_message(mqttc, obj, msg):
         dev_id = device_h_dic['ac']+'{0:02x}'.format(int(topic_d[3]))
         #q = query(dev_id)
         #settemp_hex = '{0:02x}'.format(int(config.get('User', 'ac_init_temp'))) if q['flag'] != False else '12'
-        
+
         value = is_on + acmode_dic.get(command, config.get('User', 'ac_init_mode')) + '000000000000'
         send_wait_response(dest=dev_id, value=value, log='ac mode')
 
@@ -461,10 +458,10 @@ def mqtt_on_message(mqttc, obj, msg):
         dev_id = device_h_dic['ac']+'{0:02x}'.format(int(topic_d[3]))
         #q = query(dev_id)
         #settemp_hex = '{0:02x}'.format(int(config.get('User', 'ac_init_temp'))) if q['flag'] != False else '12'
-        
+
         value = '1010' + fan_dic.get(command, config.get('User', 'ac_init_fan_mode')) + '0000000000'
         send_wait_response(dest=dev_id, value=value, log='ac mode')
-        
+
     # ac set temp : kocom/room/ac/3/set_temp/command
     elif 'ac' in topic_d and 'set_temp' in topic_d:
         dev_id = device_h_dic['ac']+'{0:02x}'.format(int(topic_d[3]))
@@ -472,8 +469,8 @@ def mqtt_on_message(mqttc, obj, msg):
 
         value = '1010000000' + settemp_hex + '0000'
         send_wait_response(dest=dev_id, value=value, log='ac settemp')
- 
- 
+
+
     # light on/off : kocom/livingroom/light/1/command
     elif 'light' in topic_d:
         dev_id = device_h_dic['light'] + room_h_dic.get(topic_d[1])
@@ -525,7 +522,7 @@ def mqtt_on_message(mqttc, obj, msg):
     # kocom/livingroom/fan/set_preset_mode/command
     elif 'fan' in topic_d and 'set_preset_mode' in topic_d:
         dev_id = device_h_dic['fan'] + room_h_dic.get(topic_d[1])
-        onoff_dic = {'off':'0000', 'on':'1101'}  
+        onoff_dic = {'off':'0000', 'on':'1101'}
        #onoff_dic = {'off':'1000', 'on':'1100'}
         speed_dic = {'Off':'00', 'Low':'40', 'Medium':'80', 'High':'c0'}
         if command == 'Off':
@@ -540,7 +537,7 @@ def mqtt_on_message(mqttc, obj, msg):
     # kocom/livingroom/fan/command
     elif 'fan' in topic_d:
         dev_id = device_h_dic['fan'] + room_h_dic.get(topic_d[1])
-        onoff_dic = {'off':'0000', 'on':'1101'}  
+        onoff_dic = {'off':'0000', 'on':'1101'}
        #onoff_dic = {'off':'1000', 'on':'1100'}
         speed_dic = {'Low':'40', 'Medium':'80', 'High':'c0'}
         init_fan_mode = config.get('User', 'init_fan_mode')
@@ -727,7 +724,7 @@ def publish_discovery(dev, sub=''):
         if logtxt != "" and config.get('Log', 'show_mqtt_publish') == 'True':
             logging.info(logtxt)
     elif dev == 'light':
-                                  
+
         for num in range(1, int(config.get('User', 'light_count'))+1):
             #ha_topic = 'homeassistant/light/kocom_livingroom_light1/config'
             topic = 'homeassistant/light/kocom_{}_light{}/config'.format(sub, num)
@@ -741,7 +738,7 @@ def publish_discovery(dev, sub=''):
                 'qos': 0,
 #               'uniq_id': '{}_{}_{}{}'.format('kocom', 'wallpad', dev, num),      # 20221108 주석처리
                 'uniq_id': '{}_{}_{}{}'.format('kocom', sub, dev, num),            # 20221108 수정
-                                                                    
+
                 'device': {
                     'name': '코콤 스마트 월패드',
                     'ids': 'kocom_smart_wallpad',
@@ -801,7 +798,7 @@ def publish_discovery(dev, sub=''):
             'fan_mode_cmd_t': 'kocom/room/ac/{}/fan_mode/command'.format(num),
             'fan_mode_stat_t': 'kocom/room/ac/{}/state'.format(num),
             'fan_mode_stat_tpl': '{{ value_json.fan }}',
-            
+
             'temp_cmd_t': 'kocom/room/ac/{}/set_temp/command'.format(num),
             'temp_stat_t': 'kocom/room/ac/{}/state'.format(num),
             'temp_stat_tpl': '{{ value_json.target }}',

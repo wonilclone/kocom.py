@@ -1,4 +1,4 @@
-# Hass.io Add-on: Kocom Wallpad with RS485 
+# Hass.io Add-on: Kocom Wallpad with RS485
 
 ![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armhf Architecture][armhf-shield] ![Supports armv7 Architecture][armv7-shield] ![Supports i386 Architecture][i386-shield]
 
@@ -9,7 +9,7 @@ Kocom Wallpad with RS485 for 센트레빌 아스테리움 시그니처
 
 1. 홈어시스턴트의 Hass.io > ADD-ON STORE에서 Add new repository by URL에 https://github.com/vifrost/kocom.py 를 입력한 다음 ADD 버튼을 누릅니다.
 2. ADD-ON STORE 페이지 하단에서 "Kocom Wallpad with RS485" 클릭합니다.
-3. "INSTALL" 버튼을 누르면 애드온이 설치됩니다. 최대 약 10분 정도 소요. 
+3. "INSTALL" 버튼을 누르면 애드온이 설치됩니다. 최대 약 10분 정도 소요.
 4. INSTALL 버튼위에 설치 애니메이션이 동작하는데 이것이 멈추더라도 REBUILD, START 버튼이 나타나지 않는 경우가 있습니다.
 5. 이 애드온은 이미지를 내려받는 것이 아니라 직접 여러분의 Hassio에서 이미지를 만듭니다.
 6. INSTALL 버튼을 누른다음 설치 애니메이션이 실행되면 제대로 설치중인 것입니다.
@@ -49,7 +49,7 @@ Kocom Wallpad with RS485 for 센트레빌 아스테리움 시그니처
 
 (2019.11.17 수정) RS485연결 또는 mqtt연결이 끊어졌을 때 예외처리/자동복구, RS485 read/write 패킷충돌 방지
 
-(2019.11.15 수정) 하나의 파이썬코드 kocom.py로 serial 및 socket 둘 다 지원하도록 바꿨습니다. kocom.conf에서 serial로 할지 socket으로 할지 등등 설정하시면 됩니다. 
+(2019.11.15 수정) 하나의 파이썬코드 kocom.py로 serial 및 socket 둘 다 지원하도록 바꿨습니다. kocom.conf에서 serial로 할지 socket으로 할지 등등 설정하시면 됩니다.
 
 (2019.11.14 수정) Rese님이 지적하신 mqtt log 오류 수정
 
@@ -58,7 +58,7 @@ Kocom Wallpad with RS485 for 센트레빌 아스테리움 시그니처
 (2019.11.13수정) checksum 을 계산하다보니 아무래도 header는 aa55까지인 것 같습니다. 다시 수정하였습니다. python 소스코드도 수정되었습니다
 
 [forum]: https://cafe.naver.com/koreassistant
-[github]: https://github.com/clipman/kocom.py
+[github]: https://github.com/wonilclone/kocom.py
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
 [armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg

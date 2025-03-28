@@ -9,7 +9,7 @@ arch:
   - aarch64
   - amd64
   - i386
-url: https://github.com/vifrost/kocom.py
+url: https://github.com/wonilclone/kocom.py
 startup: application
 boot: auto
 uart: true
@@ -17,7 +17,15 @@ map:
   - share:rw
 options:
   share/kocom/kocom.conf 설정파일: true
-  share/kocom/kocom.py 실행파일: true
+  share/kocom/kocom_main.py 실행파일: true
+  share/kocom/device_parser.py 실행파일: true
+  share/kocom/mqtt_handler.py 실행파일: true
+  share/kocom/rs485.py 실행파일: true
+  share/kocom/logger.py 실행파일: true
 schema:
   share/kocom/kocom.conf 설정파일: bool
-  share/kocom/kocom.py 실행파일: bool
+  share/kocom/kocom_main.py 실행파일: bool
+  share/kocom/device_parser.py 실행파일: bool
+  share/kocom/mqtt_handler.py 실행파일: bool
+  share/kocom/rs485.py 실행파일: bool
+  share/kocom/logger.py 실행파일: bool

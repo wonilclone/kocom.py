@@ -8,9 +8,10 @@ device_parser.py
 """
 import json
 import queue
-import time
-import logger
 import random
+import time
+
+import logger
 
 SW_VERSION = '2025.03.28'
 CONFIG_FILE = 'kocom.conf'

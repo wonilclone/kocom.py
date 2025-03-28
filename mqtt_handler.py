@@ -5,16 +5,24 @@ mqtt_handler.py
 - Home Assistant Discovery
 """
 
-import time
-import logger
 import json
 import threading
+import time
 
 from paho.mqtt import client as mqtt
+
+import logger
 from device_parser import (
-    CMD_NAME_TO_HEX, DEVICE_NAME_TO_HEX, ROOM_NAME_TO_HEX, SW_VERSION,
-    query_device, send_wait_response, call_elevator_tcpip, send_packet
+    CMD_NAME_TO_HEX,
+    DEVICE_NAME_TO_HEX,
+    ROOM_NAME_TO_HEX,
+    SW_VERSION,
+    call_elevator_tcpip,
+    query_device,
+    send_packet,
+    send_wait_response,
 )
+
 
 def init_mqtt_client(context):
     """

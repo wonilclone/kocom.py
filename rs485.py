@@ -3,15 +3,14 @@ rs485.py
 - RS485Wrapper: 시리얼/소켓 연결
 - send_packet: Kocom 프로토콜 전송 & ACK 대기
 """
-import time
-import logger
-import socket
 import platform
+import socket
+import time
+
 import serial
 
-from device_parser import (
-    READ_WRITE_GAP
-)
+import logger
+from device_parser import READ_WRITE_GAP
 
 
 class RS485Wrapper:

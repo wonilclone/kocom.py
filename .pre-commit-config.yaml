@@ -2,7 +2,6 @@
 # See https://pre-commit.com/hooks.html for more hooks
 default_language_version:
   python: python3.11
-files: ^apis/.*\.py$|^commons/.*\.py$|^configs/|^deploys/|^domains/.*\.py$|^tests/.*\.py$
 exclude: migrations/
 fail_fast: true
 default_stages: [ commit, push ]
@@ -35,13 +34,6 @@ repos:
       - id: isort
         additional_dependencies: [ toml ]
         args: [ "--profile", "black" ]
-
-  - repo: https://github.com/psf/black
-    rev: 23.1.0
-    hooks:
-      - id: black
-        stages: [ commit, manual ]
-        args: ["--config=./pyproject.toml"]
 
   # Manual hooks
   - repo: local

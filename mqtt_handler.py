@@ -54,20 +54,20 @@ def init_mqtt_client(context):
 
 # ------------------ 콜백 ------------------
 
-def mqtt_on_connect(context, client, userdata, flags, rc):
+def mqtt_on_connect(_context, client, _userdata, _flags, rc):
     if rc == 0:
         logging.info("[MQTT] Connected OK")
         client.subscribe('kocom/#',0)
     else:
         logging.error(f"[MQTT] Connect error rc={rc}")
 
-def mqtt_on_disconnect(context, client, userdata, rc):
+def mqtt_on_disconnect(_context, _client, _userdata, rc):
     logging.error(f"[MQTT] Disconnected rc={rc}")
 
-def mqtt_on_subscribe(context, client, userdata, mid, granted_qos):
+def mqtt_on_subscribe(_context, _client, _userdata, mid, granted_qos):
     logging.info(f"[MQTT] Subscribed: mid={mid}, qos={granted_qos}")
 
-def mqtt_on_message(context, client, userdata, msg):
+def mqtt_on_message(context, _client, _userdata, msg):
     """
     kocom/xxx/.../command
     """

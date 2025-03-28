@@ -5,14 +5,12 @@ rs485.py
 """
 import time
 import logging
-import random
 import socket
 import platform
-import queue
 import serial
 
 from device_parser import (
-    READ_WRITE_GAP, HEADER_HEX, TRAILER_HEX, checksum, TYPE_NAME_TO_HEX
+    READ_WRITE_GAP
 )
 
 

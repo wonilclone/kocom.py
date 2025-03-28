@@ -15,7 +15,7 @@ from rs485 import RS485Wrapper
 from mqtt_handler import init_mqtt_client, discovery
 from device_parser import (
     HEADER_HEX, TRAILER_HEX, CONFIG_FILE, BUF_SIZE, PACKET_SIZE, CHECKSUM_POSITION, DEVICE_NAME_TO_HEX, ROOM_NAME_TO_HEX,
-    checksum, parse_packet, query_device, publish_status, send_wait_response, KocomPacket,
+    checksum, parse_packet, query_device, publish_status
 )
 
 # ======================== AppContext 정의 =========================
@@ -107,7 +107,7 @@ def read_serial(context: AppContext):
             context.poll_timer.start()
 
 
-def listen_hexdata(context: AppContext):
+def listen_hex(context: AppContext):
     """
     msg_queue에서 패킷을 꺼내 parse 후,
     - ACK 확인
@@ -196,7 +196,7 @@ def main():
     context.config = config
 
     # RS485
-    r_type = config.get('RS485','type','serial')
+    r_type = config.get('RS485','type')
     if r_type == 'serial':
         ser_port = config.get('RS485','serial_port', fallback=None)
         context.rs485 = RS485Wrapper(serial_port=ser_port)
@@ -232,7 +232,7 @@ def main():
 
     # 스레드
     t1 = threading.Thread(target=read_serial, args=(context,), name='read_serial')
-    t2 = threading.Thread(target=listen_hexdata, args=(context,), name='listen_hexdata')
+    t2 = threading.Thread(target=listen_hex, args=(context,), name='listen_hexdata')
     context.thread_list.extend([t1, t2])
 
     for th in context.thread_list:

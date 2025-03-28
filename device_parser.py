@@ -157,7 +157,7 @@ def light_parse(value_hex: str, config=None) -> dict:
         ret[f"light_{i}"] = 'on' if seg != '00' else 'off'
     return ret
 
-def fan_parse(value_hex: str, config=None) -> dict:
+def fan_parse(value_hex: str, _config=None) -> dict:
     preset_dic = {'40':'Low','80':'Medium','c0':'High'}
     state = 'off' if value_hex[:2]=='00' else 'on'
     preset = 'Off'
@@ -165,7 +165,7 @@ def fan_parse(value_hex: str, config=None) -> dict:
         preset = preset_dic.get(value_hex[4:6],'Low')
     return {'state':state,'preset':preset}
 
-def ac_parse(value_hex: str, config=None) -> dict:
+def ac_parse(value_hex: str, _config=None) -> dict:
     mode_dic = {'00':'cool','01':'fan_only','02':'dry','03':'auto'}
     fan_dic  = {'01':'LOW','02':'MEDIUM','03':'HIGH'}
 
@@ -337,8 +337,8 @@ def publish_status(context, packet_obj):
 
         elif packet_obj.src_name=='fan' and packet_obj.cmd_name=='state':
             st = fan_parse(packet_obj.value_hex, context.config)
-            logtxt = f'[MQTT publish|fan] {st}'
-            mqtt_client.publish(f"kocom/livingroom/fan/state", json.dumps(st))
+            logtxt = f'[MQTT publish|fan] room[{packet_obj.src_room}] {st}'
+            mqtt_client.publish(f"kocom/{packet_obj.src_room}/fan/state", json.dumps(st))
 
         elif packet_obj.src_name=='light' and packet_obj.cmd_name=='state':
             st = light_parse(packet_obj.value_hex, context.config)

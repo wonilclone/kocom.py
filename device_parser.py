@@ -9,7 +9,7 @@ device_parser.py
 import json
 import queue
 import time
-import logging
+import logger
 import random
 
 SW_VERSION = '2025.03.28'
@@ -206,7 +206,7 @@ def query_device(context, device_hex, publish=False, enforce=False):
         if (pkt.type_name=='ack' and pkt.src_name=='wallpad' and
             pkt.dest_hex==device_hex and pkt.cmd_name!='query'):
             if context.config.get('Log','show_query_hex','False')=='True':
-                logging.info(f'[cache reuse] {pkt.dest_name}{pkt.dest_subid} -> {pkt.data_hex}')
+                logger.log_info(f'[cache reuse] {pkt.dest_name}{pkt.dest_subid} -> {pkt.data_hex}')
             return pkt
 
     # cache에 없으므로 query 패킷 보냄
@@ -281,11 +281,11 @@ def send_packet(context, dest_hex, src_hex, cmd_hex, value_hex,
             if not ok:
                 raise Exception('write returned False')
         except Exception as e:
-            logging.error(f'[RS485] Write error: {e}')
+            logger.log_error(f'[RS485] Write error: {e}')
             break
 
         if log_txt:
-            logging.info(f'[SEND|{log_txt}] {full_hex}')
+            logger.log_info(f'[SEND|{log_txt}] {full_hex}')
 
         if not check_ack:
             time.sleep(1)
@@ -300,14 +300,14 @@ def send_packet(context, dest_hex, src_hex, cmd_hex, value_hex,
             context.ack_queue.get(True, 1.3 + 0.2*random.random())
             # ack ok
             if context.config.get('Log','show_recv_hex','False')=='True':
-                logging.info('[ACK] OK')
+                logger.log_info('[ACK] OK')
             result_hex = full_hex
             break
         except queue.Empty:
             pass
 
     if not result_hex:
-        logging.info('[RS485] send failed. closing & reconnect soon.')
+        logger.log_info('[RS485] send failed. closing & reconnect soon.')
         context.rs485.close()
 
     context.ack_data_list.clear()
@@ -323,49 +323,43 @@ def publish_status(context, packet_obj):
     if not mqtt_client:
         return
 
-    logtxt = ""
     if packet_obj.type_name=='send' and packet_obj.dest_name=='wallpad':
         if packet_obj.src_name=='thermo' and packet_obj.cmd_name=='state':
-            st = thermo_parse(packet_obj.value_hex, context.config)
-            logtxt = f'[MQTT publish|thermo] id[{packet_obj.src_subid}] {st}'
-            mqtt_client.publish(f"kocom/room/thermo/{packet_obj.src_subid}/state", json.dumps(st))
+            status = thermo_parse(packet_obj.value_hex, context.config)
+            logger.log_info(f'[MQTT publish|thermo] id[{packet_obj.src_subid}] {status}')
+            mqtt_client.publish(f"kocom/room/thermo/{packet_obj.src_subid}/state", json.dumps(status))
 
         elif packet_obj.src_name=='ac' and packet_obj.cmd_name=='state':
-            st = ac_parse(packet_obj.value_hex, context.config)
-            logtxt = f'[MQTT publish|ac] id[{packet_obj.src_subid}] {st}'
-            mqtt_client.publish(f"kocom/room/ac/{packet_obj.src_subid}/state", json.dumps(st), retain=True)
+            status = ac_parse(packet_obj.value_hex, context.config)
+            logger.log_info(f'[MQTT publish|ac] id[{packet_obj.src_subid}] {status}')
+            mqtt_client.publish(f"kocom/room/ac/{packet_obj.src_subid}/state", json.dumps(status), retain=True)
 
         elif packet_obj.src_name=='fan' and packet_obj.cmd_name=='state':
-            st = fan_parse(packet_obj.value_hex, context.config)
-            logtxt = f'[MQTT publish|fan] room[{packet_obj.src_room}] {st}'
-            mqtt_client.publish(f"kocom/{packet_obj.src_room}/fan/state", json.dumps(st))
+            status = fan_parse(packet_obj.value_hex, context.config)
+            logger.log_info(f'[MQTT publish|fan] room[{packet_obj.src_room}] {status}')
+            mqtt_client.publish(f"kocom/{packet_obj.src_room}/fan/state", json.dumps(status))
 
         elif packet_obj.src_name=='light' and packet_obj.cmd_name=='state':
-            st = light_parse(packet_obj.value_hex, context.config)
-            logtxt = f'[MQTT publish|light] room[{packet_obj.src_room}] {st}'
-            mqtt_client.publish(f"kocom/{packet_obj.src_room}/light/state", json.dumps(st))
+            status = light_parse(packet_obj.value_hex, context.config)
+            logger.log_info(f'[MQTT publish|light] room[{packet_obj.src_room}] {status}')
+            mqtt_client.publish(f"kocom/{packet_obj.src_room}/light/state", json.dumps(status))
 
         elif packet_obj.src_name=='gas':
-            st = {'state': packet_obj.cmd_name}
-            logtxt = f'[MQTT publish|gas] {st}'
-            mqtt_client.publish("kocom/livingroom/gas/state", json.dumps(st))
+            status = {'state': packet_obj.cmd_name}
+            logger.log_info(f'[MQTT publish|gas] {status}')
+            mqtt_client.publish("kocom/livingroom/gas/state", json.dumps(status))
 
         elif packet_obj.src_name=='air':
-            # air_parse() 생략
-            logtxt = '[MQTT publish|air] ...'
+            logger.log_info('[MQTT publish|air] ...')
 
     elif packet_obj.type_name=='send' and packet_obj.dest_name=='elevator':
         floor = int(packet_obj.value_hex[2:4],16)
         rs485_floor = int(context.config.get('Elevator','rs485_floor','0'))
         if rs485_floor!=0:
-            st = {'floor': floor}
+            status = {'floor': floor}
             if rs485_floor==floor:
-                st['state']='off'
+                status['state']='off'
         else:
-            st = {'state':'off'}
-        logtxt = f'[MQTT publish|elevator] {st}'
-        mqtt_client.publish("kocom/myhome/elevator/state", json.dumps(st))
-
-    if logtxt and context.config.getboolean('Log','show_mqtt_publish'):
-        logging.info(logtxt)
-
+            status = {'state':'off'}
+        logger.log_info(f'[MQTT publish|elevator] {status}')
+        mqtt_client.publish("kocom/myhome/elevator/state", json.dumps(status))

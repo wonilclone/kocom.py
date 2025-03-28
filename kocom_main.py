@@ -5,9 +5,8 @@ kocom_main.py
 각 함수/모듈에 context를 인수로 넘기는 방식을 사용.
 """
 import signal
-import sys
 import time
-import logging
+import logger
 import threading
 import queue
 import configparser
@@ -72,7 +71,7 @@ def read_serial(context: AppContext):
                     buffer_hex = leftover_hex[frame_start:]
 
             if leftover_hex:
-                logging.info('[comm] leftover not parsed: ' + leftover_hex)
+                logger.log_info('[comm] leftover not parsed: ' + leftover_hex)
                 leftover_hex = ''
 
             if len(buffer_hex) == (PACKET_SIZE * 2):
@@ -84,10 +83,10 @@ def read_serial(context: AppContext):
                     if not context.msg_queue.full():
                         context.msg_queue.put(buffer_hex)
                     else:
-                        logging.error('msg_queue is full. listen_hex thread may be blocked.')
+                        logger.log_error('msg_queue is full. listen_hex thread may be blocked.')
                     buffer_hex = ''
                 else:
-                    logging.info(f"[comm] invalid packet {buffer_hex}, expected={calc_sum}")
+                    logger.log_info(f"[comm] invalid packet {buffer_hex}, expected={calc_sum}")
                     frame_start = buffer_hex.find(HEADER_HEX, len(HEADER_HEX))
                     if frame_start < 0:
                         leftover_hex += buffer_hex
@@ -97,7 +96,7 @@ def read_serial(context: AppContext):
                         buffer_hex = buffer_hex[frame_start:]
 
         except Exception as ex:
-            logging.error(f"*** read_serial error: {ex}")
+            logger.log_error(f"*** read_serial error: {ex}")
             context.poll_timer.cancel()
             context.cache_data.clear()
             context.rs485.reconnect()
@@ -117,7 +116,7 @@ def listen_hex(context: AppContext):
         hex_data = context.msg_queue.get()
 
         if context.config.getboolean('Log', 'show_recv_hex', fallback=False):
-            logging.info("[recv] " + hex_data)
+            logger.log_info("[recv] " + hex_data)
 
         packet_obj = parse_packet(hex_data)
         context.cache_data.insert(0, packet_obj)
@@ -134,7 +133,7 @@ def listen_hex(context: AppContext):
             current_target = context.wait_target.queue[0]
             if packet_obj.dest_hex == current_target and packet_obj.type_name == 'ack':
                 if len(context.ack_data_list) != 0:
-                    logging.info("[ACK] No ack received, but response arrived first. Accepting as ack.")
+                    logger.log_info("[ACK] No ack received, but response arrived first. Accepting as ack.")
                     context.ack_queue.put(hex_data)
                 time.sleep(0.3)
                 context.wait_queue.put(packet_obj)
@@ -156,7 +155,7 @@ def poll_state(context: AppContext, enforce=False):
 
     for th in context.thread_list:
         if not th.is_alive():
-            logging.error(f'[THREAD] {th.name} is not active. restarting...')
+            logger.log_error(f'[THREAD] {th.name} is not active. restarting...')
             th.start()
 
     for dev_str in dev_list:
@@ -184,8 +183,7 @@ def poll_state(context: AppContext, enforce=False):
 # ======================== 메인 실행부 =========================
 
 def main():
-    logging.basicConfig(format='%(levelname)s[%(asctime)s]:%(message)s ', level=logging.DEBUG)
-
+    logger.set_log_level('DEBUG')
     context = AppContext()
 
     # 설정 로드
@@ -204,14 +202,14 @@ def main():
         context.rs485 = RS485Wrapper(socket_server=srv, socket_port=prt)
 
     if not context.rs485.connect():
-        logging.error('[RS485] connection error. exit')
+        logger.log_error('[RS485] connection error. exit')
         return
 
     # MQTT
     context.mqtt_client = init_mqtt_client(context)
 
     if not context.mqtt_client:
-        logging.error('[MQTT] connection error. exit')
+        logger.log_error('[MQTT] connection error. exit')
         return
 
     # 큐, 락, 타이머 등

@@ -6,7 +6,7 @@ mqtt_handler.py
 """
 
 import time
-import logging
+import logger
 import json
 import threading
 
@@ -31,10 +31,10 @@ def init_mqtt_client(context):
     if config.getboolean('MQTT','mqtt_allow_anonymous'):
         user = config.get('MQTT','mqtt_username','')
         pwd  = config.get('MQTT','mqtt_password','')
-        logging.info("[MQTT] connecting with username/password")
+        logger.log_info("[MQTT] connecting with username/password")
         client.username_pw_set(username=user, password=pwd)
     else:
-        logging.info("[MQTT] connecting (anonymous)")
+        logger.log_info("[MQTT] connecting (anonymous)")
 
     broker_host = config.get('MQTT','mqtt_server','localhost')
     broker_port = int(config.get('MQTT','mqtt_port','1883'))
@@ -46,7 +46,7 @@ def init_mqtt_client(context):
             context.mqtt_client = client
             return client
         except:
-            logging.error(f"[MQTT] connection fail #{retry_cnt}")
+            logger.log_error(f"[MQTT] connection fail #{retry_cnt}")
             time.sleep(5)
 
     return None
@@ -55,16 +55,16 @@ def init_mqtt_client(context):
 
 def mqtt_on_connect(_context, client, _userdata, _flags, rc):
     if rc == 0:
-        logging.info("[MQTT] Connected OK")
+        logger.log_info("[MQTT] Connected OK")
         client.subscribe('kocom/#',0)
     else:
-        logging.error(f"[MQTT] Connect error rc={rc}")
+        logger.log_error(f"[MQTT] Connect error rc={rc}")
 
 def mqtt_on_disconnect(_context, _client, _userdata, rc):
-    logging.error(f"[MQTT] Disconnected rc={rc}")
+    logger.log_error(f"[MQTT] Disconnected rc={rc}")
 
 def mqtt_on_subscribe(_context, _client, _userdata, mid, granted_qos):
-    logging.info(f"[MQTT] Subscribed: mid={mid}, qos={granted_qos}")
+    logger.log_info(f"[MQTT] Subscribed: mid={mid}, qos={granted_qos}")
 
 def mqtt_on_message(context, _client, _userdata, msg):
     """
@@ -75,7 +75,7 @@ def mqtt_on_message(context, _client, _userdata, msg):
     if topic_parts[-1] != 'command':
         return
 
-    logging.info(f"[MQTT RECV] topic={msg.topic}, command={command_str}")
+    logger.log_info(f"[MQTT RECV] topic={msg.topic}, command={command_str}")
 
     # 예: kocom/room/thermo/3/heat_mode/command
     try:
@@ -104,7 +104,7 @@ def mqtt_on_message(context, _client, _userdata, msg):
             if command_str.upper() == 'PRESS' and context.poll_state_cb:
                 context.poll_state_cb(context, enforce=True)
     except Exception as e:
-        logging.error(f"[MQTT] handle command error: {e}")
+        logger.log_error(f"[MQTT] handle command error: {e}")
 
 
 # ------------------ Thermo Heat Mode ------------------
@@ -195,7 +195,7 @@ def handle_gas_command(context, topic_parts, cmd_str):
     room_hex = ROOM_NAME_TO_HEX.get(topic_parts[1], '00')
     dev_hex  = DEVICE_NAME_TO_HEX['gas'] + room_hex
     if cmd_str!='off':
-        logging.info('[gas] only off is supported')
+        logger.log_info('[gas] only off is supported')
         return
     off_hex = CMD_NAME_TO_HEX['off']
     send_wait_response(context, dev_hex, cmd_hex=off_hex, log_txt='gas')
@@ -225,7 +225,7 @@ def handle_elevator_command(context, topic_parts, cmd_str):
             ret_elev = call_elevator_tcpip()
 
         if not ret_elev:
-            logging.debug('[Elevator] send fail or no response')
+            logger.log_debug('[Elevator] send fail or no response')
             return
 
         # MQTT
@@ -473,4 +473,4 @@ def publish_discovery(context, dev, sub=''):
         publish_topic(topic, payload)
 
     if log_message and config.getboolean('Log', 'show_mqtt_publish', fallback=False):
-        logging.info(log_message)
+        logger.log_info(log_message)

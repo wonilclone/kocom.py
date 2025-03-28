@@ -4,7 +4,7 @@ rs485.py
 - send_packet: Kocom 프로토콜 전송 & ACK 대기
 """
 import time
-import logging
+import logger
 import socket
 import platform
 import serial
@@ -47,10 +47,10 @@ class RS485Wrapper:
             ser.stopbits = 1
             if not ser.is_open:
                 raise Exception('Serial not open')
-            logging.info(f'[RS485] Serial connected: {ser}')
+            logger.log_info(f'[RS485] Serial connected: {ser}')
             return ser
         except Exception as e:
-            logging.error(f'[RS485] Serial open failure: {e}')
+            logger.log_error(f'[RS485] Serial open failure: {e}')
             return False
 
     def _connect_socket(self):
@@ -59,9 +59,9 @@ class RS485Wrapper:
         try:
             sock.connect((self.socket_server, self.socket_port))
         except Exception as e:
-            logging.error(f'[RS485] Socket connect fail: {e}')
+            logger.log_error(f'[RS485] Socket connect fail: {e}')
             return False
-        logging.info(f'[RS485] Socket connected: {self.socket_server}:{self.socket_port}')
+        logger.log_info(f'[RS485] Socket connected: {self.socket_server}:{self.socket_port}')
         sock.settimeout(315)  # polling_interval(300)+15
         return sock
 
@@ -111,7 +111,7 @@ class RS485Wrapper:
     def reconnect(self):
         self.close()
         while True:
-            logging.info('[RS485] reconnecting...')
+            logger.log_info('[RS485] reconnecting...')
             if self.connect():
                 break
             time.sleep(10)

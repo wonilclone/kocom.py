@@ -4,7 +4,8 @@ kocom_main.py
 순환참조를 피하기 위해 AppContext를 만들어 필요한 자원을 담고,
 각 함수/모듈에 context를 인수로 넘기는 방식을 사용.
 """
-
+import signal
+import sys
 import time
 import logging
 import threading
@@ -51,16 +52,13 @@ def read_serial(context: AppContext):
     """
     RS485에서 1바이트씩 읽어, 헤더~트레일러(21바이트)까지 버퍼링 후 msg_queue에 전달
     """
-
     buffer_hex = ''
     leftover_hex = ''
 
     while True:
         try:
-            d = context.rs485.read()
-            # d는 bytes이므로, 1바이트씩 16진수로 변환
-            hex_d = f"{d[0]:02x}"
-            buffer_hex += hex_d
+            # 1바이트씩 16진수로 변환
+            buffer_hex += f"{context.rs485.read()[0]:02x}"
 
             # 헤더 검사
             if buffer_hex[:len(HEADER_HEX)] != HEADER_HEX[:len(buffer_hex)]:
@@ -86,7 +84,7 @@ def read_serial(context: AppContext):
                     if not context.msg_queue.full():
                         context.msg_queue.put(buffer_hex)
                     else:
-                        logging.error('msg_queue is full. listen_hexdata thread may be blocked.')
+                        logging.error('msg_queue is full. listen_hex thread may be blocked.')
                     buffer_hex = ''
                 else:
                     logging.info(f"[comm] invalid packet {buffer_hex}, expected={calc_sum}")
@@ -231,12 +229,12 @@ def main():
     context.poll_state_cb = poll_state
 
     # 스레드
-    t1 = threading.Thread(target=read_serial, args=(context,), name='read_serial')
-    t2 = threading.Thread(target=listen_hex, args=(context,), name='listen_hexdata')
-    context.thread_list.extend([t1, t2])
+    read_serial_thread = threading.Thread(target=read_serial, args=(context,), name='read_serial')
+    listen_hex_thread = threading.Thread(target=listen_hex, args=(context,), name='listen_hex')
+    context.thread_list.extend([read_serial_thread, listen_hex_thread])
 
-    for th in context.thread_list:
-        th.start()
+    for thread in context.thread_list:
+        thread.start()
 
     # 폴링 시작
     context.poll_timer = threading.Timer(1, poll_state, args=(context, False))
@@ -246,8 +244,7 @@ def main():
     discovery(context)
 
     # 메인 스레드는 대기
-    while True:
-        time.sleep(10)
+    signal.sigwait((signal.SIGINT, signal.SIGTERM))
 
 
 if __name__ == "__main__":

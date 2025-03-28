@@ -366,6 +366,6 @@ def publish_status(context, packet_obj):
         logtxt = f'[MQTT publish|elevator] {st}'
         mqtt_client.publish("kocom/myhome/elevator/state", json.dumps(st))
 
-    if logtxt and context.config.get('Log','show_mqtt_publish','False')=='True':
+    if logtxt and context.config.getboolean('Log','show_mqtt_publish'):
         logging.info(logtxt)
 

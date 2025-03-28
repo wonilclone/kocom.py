@@ -58,7 +58,7 @@ Kocom Wallpad with RS485 for 센트레빌 아스테리움 시그니처
 (2019.11.13수정) checksum 을 계산하다보니 아무래도 header는 aa55까지인 것 같습니다. 다시 수정하였습니다. python 소스코드도 수정되었습니다
 
 [forum]: https://cafe.naver.com/koreassistant
-[github]: https://github.com/clipman/kocom.py
+[github]: https://github.com/wonilclone/kocom.py
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
 [armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg

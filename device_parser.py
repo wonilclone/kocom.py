@@ -206,12 +206,12 @@ def query_device(context, device_hex, publish=False, enforce=False):
             break
         if (pkt.type_name=='ack' and pkt.src_name=='wallpad' and
             pkt.dest_hex==device_hex and pkt.cmd_name!='query'):
-            if context.config.get('Log','show_query_hex','False')=='True':
+            if context.config.get('Log','show_query_hex',fallback='False')=='True':
                 logger.log_info(f'[cache reuse] {pkt.dest_name}{pkt.dest_subid} -> {pkt.data_hex}')
             return pkt
 
     # cache에 없으므로 query 패킷 보냄
-    if context.config.get('Log','show_query_hex','False')=='True':
+    if context.config.get('Log','show_query_hex',fallback='False')=='True':
         dev_name = DEVICE_HEX_TO_NAME.get(device_hex[:2],'?')
         subid    = int(device_hex[2:4],16)
         log_txt  = f"query {dev_name}{subid}"
@@ -300,7 +300,7 @@ def send_packet(context, dest_hex, src_hex, cmd_hex, value_hex,
         try:
             context.ack_queue.get(True, 1.3 + 0.2*random.random())
             # ack ok
-            if context.config.get('Log','show_recv_hex','False')=='True':
+            if context.config.get('Log','show_recv_hex',fallback='False')=='True':
                 logger.log_info('[ACK] OK')
             result_hex = full_hex
             break
@@ -355,7 +355,7 @@ def publish_status(context, packet_obj):
 
     elif packet_obj.type_name=='send' and packet_obj.dest_name=='elevator':
         floor = int(packet_obj.value_hex[2:4],16)
-        rs485_floor = int(context.config.get('Elevator','rs485_floor','0'))
+        rs485_floor = int(context.config.get('Elevator','rs485_floor',fallback='0'))
         if rs485_floor!=0:
             status = {'floor': floor}
             if rs485_floor==floor:

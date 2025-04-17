@@ -160,7 +160,7 @@ def poll_state(context: AppContext, enforce=False):
         context.poll_timer.cancel()
 
 
-    dev_list = [x.strip() for x in context.config.get('Device','enabled','').split(',')]
+    dev_list = [x.strip() for x in context.config.get('Device','enabled',fallback='').split(',')]
     no_polling_list = ['wallpad','elevator']
 
     for th in context.thread_list:

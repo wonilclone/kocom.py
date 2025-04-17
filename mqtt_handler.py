@@ -37,15 +37,15 @@ def init_mqtt_client(context):
     client.on_message    = lambda c,u,m: mqtt_on_message(context, c,u,m)
 
     if config.getboolean('MQTT','mqtt_allow_anonymous'):
-        user = config.get('MQTT','mqtt_username','')
-        pwd  = config.get('MQTT','mqtt_password','')
+        user = config.get('MQTT','mqtt_username',fallback='')
+        pwd  = config.get('MQTT','mqtt_password',fallback='')
         logger.log_info("[MQTT] connecting with username/password")
         client.username_pw_set(username=user, password=pwd)
     else:
         logger.log_info("[MQTT] connecting (anonymous)")
 
-    broker_host = config.get('MQTT','mqtt_server','localhost')
-    broker_port = int(config.get('MQTT','mqtt_port','1883'))
+    broker_host = config.get('MQTT','mqtt_server',fallback='localhost')
+    broker_port = int(config.get('MQTT','mqtt_port',fallback=1883))
 
     for retry_cnt in range(1,6):
         try:
@@ -122,7 +122,7 @@ def handle_thermo_heat_mode(context, topic_parts, cmd_str):
     heat_dic = {'heat':'11','off':'00'}
 
     query_device(context, dev_hex)
-    init_temp_hex = f"{int(context.config.get('User','thermo_init_temp','20')):02x}"
+    init_temp_hex = f"{int(context.config.get('User','thermo_init_temp',fallback='20')):02x}"
 
     value_hex = heat_dic.get(cmd_str,'00') + '00' + init_temp_hex + '0000000000'
     send_wait_response(context, dev_hex, value_hex=value_hex, log_txt='thermo heatmode')
@@ -148,7 +148,7 @@ def handle_ac_mode(context, topic_parts, cmd_str):
     if cmd_str=='off':
         value_hex = "00" + acmode_dic['off'] + "000000000000"
     else:
-        dmode = context.config.get('User','ac_init_mode','00')
+        dmode = context.config.get('User','ac_init_mode',fallback='00')
         mode_hex = acmode_dic.get(cmd_str, dmode)
         value_hex = "10" + mode_hex + "000000000000"
 
@@ -157,7 +157,7 @@ def handle_ac_mode(context, topic_parts, cmd_str):
 def handle_ac_fan_mode(context, topic_parts, cmd_str):
     dev_hex = DEVICE_NAME_TO_HEX['ac'] + f"{int(topic_parts[3]):02x}"
     fan_dic = {'LOW':'01','MEDIUM':'02','HIGH':'03'}
-    init_fan = context.config.get('User','ac_init_fan_mode','01')
+    init_fan = context.config.get('User','ac_init_fan_mode',fallback='01')
     fan_hex = fan_dic.get(cmd_str, init_fan)
     value_hex = "1010" + fan_hex + "0000000000"
     send_wait_response(context, dev_hex, value_hex=value_hex, log_txt='ac fanmode')
@@ -223,7 +223,7 @@ def handle_elevator_command(context, topic_parts, cmd_str):
     state_off = json.dumps({'state':'off'})
 
     if cmd_str=='on':
-        elev_type = context.config.get('Elevator','type','rs485')
+        elev_type = context.config.get('Elevator','type',fallback='rs485')
         if elev_type=='rs485':
             wallpad_hex = DEVICE_NAME_TO_HEX['wallpad']+'00'
             cmd_on_hex = CMD_NAME_TO_HEX['on']
@@ -242,7 +242,7 @@ def handle_elevator_command(context, topic_parts, cmd_str):
         ).start()
 
         # rs485_floor=='' → 5초 후 off
-        if context.config.get('Elevator','rs485_floor','')=='':
+        if context.config.get('Elevator','rs485_floor',fallback='')=='':
             threading.Timer(5, lambda:
                 client.publish("kocom/myhome/elevator/state", state_off)
             ).start()
@@ -275,7 +275,7 @@ def handle_fan_command(context, topic_parts, cmd_str):
     dev_hex = DEVICE_NAME_TO_HEX['fan'] + ROOM_NAME_TO_HEX.get(topic_parts[1],'00')
     onoff_dic = {'off':'0000','on':'1101'}
     spd_dic   = {'Low':'40','Medium':'80','High':'c0'}
-    init_fan  = context.config.get('User','init_fan_mode','Low')
+    init_fan  = context.config.get('User','init_fan_mode',fallback='Low')
 
     onoff_hex = onoff_dic.get(cmd_str,'0000')
     sp_hex    = spd_dic.get(init_fan,'40')
@@ -290,7 +290,7 @@ def discovery(context):
     Home Assistant Discovery (원본 코드 대부분 유사)
     """
     config = context.config
-    dev_list = [x.strip() for x in config.get('Device','enabled','').split(',')]
+    dev_list = [x.strip() for x in config.get('Device','enabled',fallback='').split(',')]
     for dev_str in dev_list:
         parts = dev_str.split('_')
         dev = parts[0]

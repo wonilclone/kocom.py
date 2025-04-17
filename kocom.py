@@ -429,9 +429,11 @@ def call_elevator_tcpip():
 
 
 def mqtt_on_message(mqttc, obj, msg):
-    command = msg.payload.decode('ascii')
     topic_d = msg.topic.split('/')
+    if topic_d[-1] != 'command':
+        return
 
+    command = msg.payload.decode('ascii')
     logging.info("[MQTT RECV] " + msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
 
     # thermo heat/off
@@ -814,6 +816,7 @@ def poll_state(enforce=False):
             result = query(dev_id + sub_id, publish=True, enforce=enforce)
             if result['flag'] == False:
                 logging.warning(f"[poll_state] {t} 기기 응답 실패. 다음 기기로 넘어갑니다.")
+                break
             time.sleep(1)
 
     poll_timer = threading.Timer(polling_interval, poll_state)

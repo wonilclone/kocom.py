@@ -198,14 +198,18 @@ class RS485Wrapper:
                 pass
         return ret
 
-    def reconnect(self):
+    def reconnect(self, max_retry=3):
         self.close()
-        while True:
-            logging.info('[RS485] reconnecting to RS485...')
+        for i in range(max_retry):
+            logging.info("[RS485] reconnect attempt #%d ...", i + 1)
             if self.connect() != False:
-                logging.info('[RS485] reconnected successfully.')
-                break
-            time.sleep(10)
+                logging.info("[RS485] reconnected successfully.")
+                return True
+            time.sleep(2)
+        logging.warning(
+            "[RS485] reconnect failed after %d attempts. Will retry later.", max_retry
+        )
+        return False
 
 
 def send(dest, src, cmd, value, log=None, check_ack=True):

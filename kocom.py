@@ -216,40 +216,50 @@ def send(dest, src, cmd, value, log=None, check_ack=True):
     send_lock.acquire()
     ack_data.clear()
     ret = False
-    for seq_h in seq_t_dic.keys():  # if there's no ACK received, then repeat sending with next sequence code
+    physical_error = False  # 하드웨어 쓰기 자체에 실패했는지 구분
+
+    for seq_h in seq_t_dic.keys():
         payload = type_h_dic['send'] + seq_h + '00' + dest + src + cmd + value
         send_data = header_h + payload + chksum(payload) + trailer_h
         try:
             if not rs485.write(bytearray.fromhex(send_data)):
+                # 여기서 하드웨어 write() 가 False 리턴
                 raise Exception('RS485 write returned False')
         except Exception as ex:
-            logging.error("[RS485] Write error.[{}]".format(ex))
-            # [수정] 여기서 break 해도 프로그램은 죽지 않고, 다음 함수에서 재연결 로직 수행
+            logging.error(f"[RS485] Write error.[{ex}]")
+            physical_error = True
             break
+
         if log is not None:
             logging.info('[SEND|{}] {}'.format(log, send_data))
         if check_ack == False:
             time.sleep(1)
-            ret = send_data
+            ret = True
             break
 
-        # wait and checking for ACK
         ack_data.append(type_h_dic['ack'] + seq_h + '00' + src + dest + cmd + value)
         try:
-            ack_q.get(True, 1.3+0.2*random.random()) # random wait between 1.3~1.5 seconds for ACK
+            ack_q.get(True, 1.3+0.2*random.random())  # ACK 대기
             if config.get('Log', 'show_recv_hex') == 'True':
                 logging.info('[ACK] OK')
-            ret = send_data
+            ret = True
             break
         except queue.Empty:
+            # 디바이스 응답 안 온 경우
             pass
 
-    if ret == False:
-        logging.info('[RS485] send failed. closing RS485. it will try to reconnect to RS485 shortly.')
-        rs485.close()
+    if not ret:
+        # 실제 하드웨어 write error가 났으면 RS485 close
+        if physical_error:
+            logging.info('[RS485] send failed due to physical write error. closing & reconnect.')
+            rs485.close()
+        else:
+            # 단순 "해당 디바이스 응답 없음(ACK 미수신)" → close() 안 함
+            logging.warning('[RS485] send failed due to no ACK from device. skip this device.')
     ack_data.clear()
     send_lock.release()
     return ret
+
 
 
 def chksum(data_h):

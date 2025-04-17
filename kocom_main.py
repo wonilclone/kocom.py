@@ -209,6 +209,7 @@ def main():
     else:
         srv = config.get('RS485','socket_server')
         prt = int(config.get('RS485','socket_port'))
+        print(f"Connecting to {srv}:{prt}")
         context.rs485 = RS485Wrapper(socket_server=srv, socket_port=prt)
 
     if not context.rs485.connect():

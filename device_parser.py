@@ -309,7 +309,7 @@ def send_packet(context, dest_hex, src_hex, cmd_hex, value_hex,
 
     if not result_hex:
         logger.log_info('[RS485] send failed. closing & reconnect soon.')
-        context.rs485.close()
+        # context.rs485.close()
 
     context.ack_data_list.clear()
     context.send_lock.release()
